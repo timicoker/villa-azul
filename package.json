@@ -1,0 +1,42 @@
+{
+  "name": "timi",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@types/materialize-css": "^1.0.4",
+    "ajv": "^6.5.5",
+    "axios": "^0.18.0",
+    "google-map-react": "^1.1.0",
+    "jquery": "^3.3.1",
+    "materialize-css": "^1.0.0-rc.2",
+    "minstyle.io": "^0.2.1",
+    "moment": "^2.22.2",
+    "moment-timezone": "^0.5.23",
+    "parallax-js": "^3.1.0",
+    "prop-types": "^15.6.2",
+    "react": "^16.5.2",
+    "react-datepicker": "^2.0.0",
+    "react-dom": "^16.5.2",
+    "react-moment": "^0.8.3",
+    "react-responsive-carousel": "^3.1.43",
+    "react-router-dom": "^4.3.1",
+    "react-scripts": "2.0.4",
+    "react-slick": "^0.23.2",
+    "slick-carousel": "^1.8.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
+}
