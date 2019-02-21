@@ -65,6 +65,14 @@ module.exports = {
     },
     {
       type: 'markdown',
+      urlId: 'Time-Zones',
+      category: 'General',
+      title: 'Time Zones',
+      description: 'Time zone functions',
+      path: path.join(__dirname, 'timeZones.md')
+    },
+    {
+      type: 'markdown',
       urlId: 'ECMAScript-Modules',
       category: 'General',
       title: 'ECMAScript Modules',
@@ -97,6 +105,14 @@ module.exports = {
     },
     {
       type: 'markdown',
+      urlId: 'Upgrade-Guide',
+      category: 'General',
+      title: 'Upgrade guide',
+      description: 'Changes from v1 to v2',
+      path: path.join(__dirname, 'upgradeGuide.md')
+    },
+    {
+      type: 'markdown',
       urlId: 'License',
       category: 'General',
       title: 'License',
@@ -108,9 +124,6 @@ module.exports = {
   sharedDocs: [
     {
       fullPath: path.join(__dirname, 'Interval.js')
-    },
-    {
-      fullPath: path.join(__dirname, 'Options.js')
     },
     {
       fullPath: path.join(__dirname, 'Locale.js')
