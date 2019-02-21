@@ -1,4 +1,5 @@
 import toInteger from '../_lib/toInteger/index.js'
+import assign from '../_lib/assign/index.js'
 import getTimezoneOffsetInMilliseconds from '../_lib/getTimezoneOffsetInMilliseconds/index.js'
 import toDate from '../toDate/index.js'
 import subMilliseconds from '../subMilliseconds/index.js'
@@ -9,7 +10,7 @@ import {
   throwProtectedError
 } from '../_lib/protectedTokens/index.js'
 
-var TIMEZONE_UNIT_PRIORITY = 20
+var TIMEZONE_UNIT_PRIORITY = 10
 
 // This RegExp consists of three parts separated by `|`:
 // - [yYQqMLwIdDecihHKkms]o matches any available ordinal number token
@@ -165,24 +166,24 @@ var notWhitespaceRegExp = /\S/
  * | Second                          |  50 | s       | 0, 1, ..., 59                     |       |
  * |                                 |     | so      | 0th, 1st, ..., 59th               | 5     |
  * |                                 |     | ss      | 00, 01, ..., 59                   |       |
- * | Fraction of second              |  40 | S       | 0, 1, ..., 9                      |       |
+ * | Seconds timestamp               |  40 | t       | 512969520                         |       |
+ * |                                 |     | tt      | ...                               | 2     |
+ * | Fraction of second              |  30 | S       | 0, 1, ..., 9                      |       |
  * |                                 |     | SS      | 00, 01, ..., 99                   |       |
  * |                                 |     | SSS     | 000, 0001, ..., 999               |       |
  * |                                 |     | SSSS    | ...                               | 2     |
- * | Timezone (ISO-8601 w/ Z)        |  20 | X       | -08, +0530, Z                     |       |
+ * | Milliseconds timestamp          |  20 | T       | 512969520900                      |       |
+ * |                                 |     | TT      | ...                               | 2     |
+ * | Timezone (ISO-8601 w/ Z)        |  10 | X       | -08, +0530, Z                     |       |
  * |                                 |     | XX      | -0800, +0530, Z                   |       |
  * |                                 |     | XXX     | -08:00, +05:30, Z                 |       |
  * |                                 |     | XXXX    | -0800, +0530, Z, +123456          | 2     |
  * |                                 |     | XXXXX   | -08:00, +05:30, Z, +12:34:56      |       |
- * | Timezone (ISO-8601 w/o Z)       |  20 | x       | -08, +0530, +00                   |       |
+ * | Timezone (ISO-8601 w/o Z)       |  10 | x       | -08, +0530, +00                   |       |
  * |                                 |     | xx      | -0800, +0530, +0000               |       |
  * |                                 |     | xxx     | -08:00, +05:30, +00:00            | 2     |
  * |                                 |     | xxxx    | -0800, +0530, +0000, +123456      |       |
  * |                                 |     | xxxxx   | -08:00, +05:30, +00:00, +12:34:56 |       |
- * | Seconds timestamp               |  10 | t       | 512969520                         |       |
- * |                                 |     | tt      | ...                               | 2     |
- * | Milliseconds timestamp          |  10 | T       | 512969520900                      |       |
- * |                                 |     | TT      | ...                               | 2     |
  * Notes:
  * 1. "Formatting" units (e.g. formatting quarter) in the default en-US locale
  *    are the same as "stand-alone" units, but are different in some languages.
@@ -261,11 +262,26 @@ var notWhitespaceRegExp = /\S/
  * Invalid Date is a Date, whose time value is NaN.
  * Time value of Date: http://es5.github.io/#x15.9.1.1
  *
+ * ### v2.0.0 breaking changes:
+ *
+ * - [Changes that are common for the whole library](https://github.com/date-fns/date-fns/blob/master/docs/upgradeGuide.md#Common-Changes).
+ *
+ * - Old `parse` was renamed to `toDate`.
+ *   Now `parse` is a new function which parses a string using a provided format.
+ *
+ *   ```javascript
+ *   // Before v2.0.0
+ *   parse('2016-01-01')
+ *
+ *   // v2.0.0 onward
+ *   toDate('2016-01-01')
+ *   parse('2016-01-01', 'yyyy-MM-dd', new Date())
+ *   ```
+ *
  * @param {String} dateString - the string to parse
  * @param {String} formatString - the string of tokens
- * @param {Date|String|Number} baseDate - defines values missing from the parsed dateString
- * @param {Options} [options] - the object with options. See [Options]{@link https://date-fns.org/docs/Options}
- * @param {0|1|2} [options.additionalDigits=2] - passed to `toDate`. See [toDate]{@link https://date-fns.org/docs/toDate}
+ * @param {Date|Number} baseDate - defines values missing from the parsed dateString
+ * @param {Object} [options] - an object with options.
  * @param {Locale} [options.locale=defaultLocale] - the locale object. See [Locale]{@link https://date-fns.org/docs/Locale}
  * @param {0|1|2|3|4|5|6} [options.weekStartsOn=0] - the index of the first day of the week (0 - Sunday)
  * @param {1|2|3|4|5|6|7} [options.firstWeekContainsDate=1] - the day of January, which is always in the first week of the year
@@ -275,7 +291,6 @@ var notWhitespaceRegExp = /\S/
  *   See: https://git.io/fxCyr
  * @returns {Date} the parsed date
  * @throws {TypeError} 3 arguments required
- * @throws {RangeError} `options.additionalDigits` must be 0, 1 or 2
  * @throws {RangeError} `options.weekStartsOn` must be between 0 and 6
  * @throws {RangeError} `options.firstWeekContainsDate` must be between 1 and 7
  * @throws {RangeError} `options.locale` must contain `match` property
@@ -283,22 +298,15 @@ var notWhitespaceRegExp = /\S/
  *
  * @example
  * // Parse 11 February 2014 from middle-endian format:
- * var result = parse(
- *   '02/11/2014',
- *   'MM/dd/yyyy',
- *   new Date()
- * )
+ * var result = parse('02/11/2014', 'MM/dd/yyyy', new Date())
  * //=> Tue Feb 11 2014 00:00:00
  *
  * @example
  * // Parse 28th of February in Esperanto locale in the context of 2010 year:
  * import eo from 'date-fns/locale/eo'
- * var result = parse(
- *   '28-a de februaro',
- *   "do 'de' MMMM",
- *   new Date(2010, 0, 1),
- *   {locale: eo}
- * )
+ * var result = parse('28-a de februaro', "do 'de' MMMM", new Date(2010, 0, 1), {
+ *   locale: eo
+ * })
  * //=> Sun Feb 28 2010 00:00:00
  */
 export default function parse(
@@ -356,7 +364,7 @@ export default function parse(
 
   if (formatString === '') {
     if (dateString === '') {
-      return toDate(dirtyBaseDate, options)
+      return toDate(dirtyBaseDate)
     } else {
       return new Date(NaN)
     }
@@ -454,7 +462,7 @@ export default function parse(
       return setterArray[0]
     })
 
-  var date = toDate(dirtyBaseDate, options)
+  var date = toDate(dirtyBaseDate)
 
   if (isNaN(date)) {
     return new Date(NaN)
@@ -465,6 +473,7 @@ export default function parse(
   // See an issue about UTC functions: https://github.com/date-fns/date-fns/issues/37
   var utcDate = subMilliseconds(date, getTimezoneOffsetInMilliseconds(date))
 
+  var flags = {}
   for (i = 0; i < uniquePrioritySetters.length; i++) {
     var setter = uniquePrioritySetters[i]
 
@@ -475,13 +484,25 @@ export default function parse(
       return new Date(NaN)
     }
 
-    utcDate = setter.set(utcDate, setter.value, subFnOptions)
+    var result = setter.set(utcDate, flags, setter.value, subFnOptions)
+    // Result is tuple (date, flags)
+    if (result[0]) {
+      utcDate = result[0]
+      assign(flags, result[1])
+      // Result is date
+    } else {
+      utcDate = result
+    }
   }
 
   return utcDate
 }
 
-function dateToSystemTimezone(date) {
+function dateToSystemTimezone(date, flags) {
+  if (flags.timestampIsSet) {
+    return date
+  }
+
   var convertedDate = new Date(0)
   convertedDate.setFullYear(
     date.getUTCFullYear(),
